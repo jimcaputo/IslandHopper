@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="AppTheme">
+        <attr name="colorPrimary" format="color|reference" />
+        <attr name="colorPrimaryDark" format="color|reference" />
+        <attr name="colorAccent" format="color|reference" />
+    </declare-styleable>
+</resources>
