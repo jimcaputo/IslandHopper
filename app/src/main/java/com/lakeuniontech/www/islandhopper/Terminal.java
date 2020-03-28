@@ -23,8 +23,8 @@ enum Terminal {
         return name;
     }
 
-    // Return the most likely destination
-    public Terminal getDestination() {
+    // Return the arrival (destination) terminal for this terminal
+    public Terminal getArriveTerminal() {
         if (this == Terminal.ANACORTES)
             return Terminal.ORCAS;
         else

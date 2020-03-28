@@ -45,8 +45,6 @@ public class MainActivity extends AppCompatActivity {
     JsonRequest jsonRequest;
     LocationInfo locationInfo;
 
-    Terminal closestTerminal;
-
     // Currently selected day being viewed
     Calendar cal;
     DialogFragment datePicker;
@@ -92,8 +90,8 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         locationInfo.startListener();
 
-        closestTerminal = locationInfo.findClosestTerminal();
-        setTerminals(closestTerminal, closestTerminal.getDestination());
+        Terminal departTerminal = locationInfo.getDepartTerminal();
+        setTerminals(departTerminal, departTerminal.getArriveTerminal());
         locationInfo.getDrivingTime();
 
         fetchSchedule();

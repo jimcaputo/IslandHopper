@@ -77,7 +77,7 @@ class LocationInfo {
         }
     }
 
-    Terminal findClosestTerminal() {
+    Terminal getDepartTerminal() {
         float shortestDistance = 0;
         Terminal closestTerminal = Terminal.ANACORTES;  // Default to Anacortes
 
@@ -98,7 +98,11 @@ class LocationInfo {
                 closestTerminal = terminal;
             }
         }
-        return closestTerminal;
+
+        // HACK - optimized for just me. :) Since we default to Orcas
+        if (closestTerminal != Terminal.ANACORTES)
+            return Terminal.ORCAS;
+        return Terminal.ANACORTES;
     }
 
     void getDrivingTime() {
