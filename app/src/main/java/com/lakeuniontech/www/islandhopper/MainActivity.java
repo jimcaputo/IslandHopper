@@ -89,9 +89,6 @@ public class MainActivity extends AppCompatActivity {
 
         Terminal departTerminal = locationInfo.getDepartTerminal();
         setTerminals(departTerminal, departTerminal.getArriveTerminal());
-        locationInfo.getDrivingTime();
-
-        fetchSchedule();
     }
 
     @Override
@@ -162,7 +159,9 @@ public class MainActivity extends AppCompatActivity {
             else if (item.equals(Terminal.SHAW.name)) terminal = Terminal.SHAW;
 
             fetchSchedule();
-            locationInfo.getDrivingTime();
+            // If this TerminalSpinner is for the departure terminal, then update driving time
+            if (this == MainActivity.this.depart)
+                locationInfo.getDrivingTime();
         }
 
         public void onNothingSelected(AdapterView parent) {}

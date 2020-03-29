@@ -34,6 +34,8 @@ class LocationInfo {
     private LocationManager locationManager;
     private LocationListener locationListener;
     private Location currentLocation;
+    private Location lastUpdateLocation;
+    private Terminal lastUpdateTerminal;
 
     LocationInfo(MainActivity mainActivity) {
         this.mainActivity = mainActivity;
@@ -155,6 +157,12 @@ class LocationInfo {
 
         if (currentLocation.getAccuracy() == 0  ||  currentLocation.getAccuracy() > MIN_ACCURACY)
             return;
+
+        // Make sure something has changed since the last time we fetched directions
+        if (currentLocation == lastUpdateLocation  &&  mainActivity.depart.terminal == lastUpdateTerminal)
+            return;
+        lastUpdateLocation = currentLocation;
+        lastUpdateTerminal = mainActivity.depart.terminal;
 
         String url = String.format(Locale.US, URL_DIRECTIONS,
                 currentLocation.getLatitude(), currentLocation.getLongitude(),
