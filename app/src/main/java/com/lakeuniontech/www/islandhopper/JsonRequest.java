@@ -17,7 +17,7 @@ import java.util.Map;
 
 
 interface JsonRequestCallback {
-    void success(JSONObject response);
+    void success(JSONObject response, int counter);
     void failure(String error);
 }
 
@@ -29,12 +29,13 @@ class JsonRequest {
         queue = Volley.newRequestQueue(context);
     }
 
-    void sendRequest(String url, final HashMap<String, String> headers, final JsonRequestCallback callback) {
+    void sendRequest(String url, final HashMap<String, String> headers, final int counter,
+            final JsonRequestCallback callback) {
         JsonObjectRequest jsonRequest = new JsonObjectRequest(Request.Method.GET, url, null,
                 new Response.Listener<JSONObject>() {
                     @Override
                     public void onResponse(JSONObject response) {
-                        callback.success(response);
+                        callback.success(response, counter);
                     }
                 },
                 new Response.ErrorListener() {
@@ -44,12 +45,12 @@ class JsonRequest {
                     }
                 }
         ) {
-          @Override
-          public Map<String, String> getHeaders() throws AuthFailureError {
-            if (headers == null)
-              return new HashMap<String, String>();
-            return headers;
-          }
+            @Override
+            public Map<String, String> getHeaders() throws AuthFailureError {
+                if (headers == null)
+                    return new HashMap<String, String>();
+                return headers;
+            }
         };
         queue.add(jsonRequest);
     }

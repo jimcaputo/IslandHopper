@@ -40,6 +40,10 @@ public class MainActivity extends AppCompatActivity {
     final String URL_VESSELS = "http://www.wsdot.wa.gov/ferries/api/vessels/rest/vessellocations?apiaccesscode=%s";
 
     JsonRequest jsonRequest;
+    // Seems hacky, but this is used to make sure we only ever update the UI with the most recent
+    // response, which should match the current settings (ie terminals, dates)
+    int requestCounter;
+
     LocationInfo locationInfo;
 
     // Currently selected day being viewed
@@ -56,6 +60,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         jsonRequest = new JsonRequest(this);
+        requestCounter = 0;
 
         cal = Calendar.getInstance();
         datePicker = new DatePickerFragment();
@@ -222,21 +227,21 @@ public class MainActivity extends AppCompatActivity {
                 cal.get(Calendar.YEAR), cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH),
                 depart.terminal.id, arrive.terminal.id, ApiKeys.WSDOT);
 
-        jsonRequest.sendRequest(url, null,
-                new JsonRequestCallback() {
-                    @Override
-                    public void success(JSONObject response) {
-                        // TODO - make sure the response matches the current UI settings, as the user may have clicked
-                        // quickly on various changes, and now the responses are coming in over time and potentially
-                        // out of order.
+        jsonRequest.sendRequest(url, null, ++requestCounter, new JsonRequestCallback() {
+                @Override
+                public void success(JSONObject response, int counter) {
+                    // TODO - make sure the response matches the current UI settings, as the user may have clicked
+                    // quickly on various changes, and now the responses are coming in over time and potentially
+                    // out of order.
+                    if (counter == requestCounter)
                         populateList(response);
-                    }
+                }
 
-                    @Override
-                    public void failure(String error) {
-                        displayToast("Request failed: " + error);
-                    }
-                });
+                @Override
+                public void failure(String error) {
+                    displayToast("Request failed: " + error);
+                }
+        });
     }
 
     private class FerryListAdapter extends BaseAdapter {

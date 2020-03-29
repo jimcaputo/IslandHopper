@@ -176,29 +176,38 @@ class LocationInfo {
             return;
         headers.put("X-Android-Cert", sha1);
 
-        mainActivity.jsonRequest.sendRequest(url, headers,
-                new JsonRequestCallback() {
-                    @Override
-                    public void success(JSONObject response) {
-                        try {
-                            JSONArray routes = response.getJSONArray("routes");
-                            JSONArray legs = routes.getJSONObject(0).getJSONArray("legs");
-                            Integer duration = legs.getJSONObject(0).getJSONObject("duration").getInt("value");
+        mainActivity.jsonRequest.sendRequest(url, headers, 0, new JsonRequestCallback() {
+            @Override
+            public void success(JSONObject response, int counter) {
+                try {
+                    TextView textDrivingTime = (TextView) mainActivity.findViewById(R.id.textDrivingTime);
 
-                            duration = duration / 60;   // Convert to minutes
+                    JSONArray routes = response.getJSONArray("routes");
+                    JSONArray legs = routes.getJSONObject(0).getJSONArray("legs");
+                    int minutes = legs.getJSONObject(0).getJSONObject("duration").getInt("value");
 
-                            TextView textDrivingTime = (TextView) mainActivity.findViewById(R.id.textDrivingTime);
-                            textDrivingTime.setText(String.format(Locale.US,
-                                    "Estimated driving time:  %d minutes", duration));
-                        } catch (Exception e) {
-                            mainActivity.displayToast("Failed parsing directions: " + e.toString());
-                        }
-                    }
+                    minutes = minutes / 60;   // Convert to minutes
+                    int days = minutes / (60 * 24);
+                    minutes = minutes % (60 * 24);
+                    int hours = minutes / 60;
+                    minutes = minutes % 60;
 
-                    @Override
-                    public void failure(String error) {
-                        mainActivity.displayToast("Request failed: " + error);
-                    }
-                });
+                    String duration = new String();
+                    if (days > 0)  duration += String.format(Locale.US, "%d d ", days);
+                    if (hours > 0)  duration += String.format(Locale.US, "%d h ", hours);
+                    if (minutes > 0)  duration += String.format(Locale.US, "%d m", minutes);
+
+                    textDrivingTime.setText(String.format(Locale.US,
+                            "Estimated driving time:  %s", duration));
+                } catch (Exception e) {
+                    mainActivity.displayToast("Failed parsing directions: " + e.toString());
+                }
+            }
+
+            @Override
+            public void failure(String error) {
+                mainActivity.displayToast("Request failed: " + error);
+            }
+        });
     }
 }
