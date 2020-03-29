@@ -1,12 +1,18 @@
 package com.lakeuniontech.www.islandhopper;
 
 import android.content.Context;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
+import android.content.pm.Signature;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.os.Bundle;
 import android.widget.TextView;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
 import java.util.Locale;
 
 import org.json.JSONArray;
@@ -14,7 +20,6 @@ import org.json.JSONObject;
 
 
 class LocationInfo {
-    final private String MAPS_API_KEY = "AIzaSyAinxC0uPLKga4-J426lEDErUg8MjOO4L4";
     final private String URL_DIRECTIONS = "https://maps.googleapis.com/maps/api/directions/json?origin=%s,%s&destination=%s&key=%s";
 
     // Request location update every 1 minute
@@ -105,6 +110,42 @@ class LocationInfo {
         return Terminal.ANACORTES;
     }
 
+    String getHexSha1() {
+        PackageInfo packageInfo = null;
+        try {
+            //String sha1 = String.format(Locale.US, "%s", ApiKeys.SHA1);
+            packageInfo = mainActivity.getPackageManager().getPackageInfo(
+                    mainActivity.getPackageName(), mainActivity.getPackageManager().GET_SIGNING_CERTIFICATES);
+            if (packageInfo == null
+                    || packageInfo.signingInfo.getSigningCertificateHistory() == null
+                    || packageInfo.signingInfo.getSigningCertificateHistory().length == 0
+                    || packageInfo.signingInfo.getSigningCertificateHistory()[0] == null) {
+                return null;
+            }
+        } catch (PackageManager.NameNotFoundException e) {
+            return null;
+        }
+
+        String sha1;
+        try {
+            Signature[] signatures = packageInfo.signingInfo.getSigningCertificateHistory();
+            MessageDigest md = MessageDigest.getInstance("SHA1");
+            byte[] digest = md.digest(signatures[0].toByteArray());
+
+            char[] hexArray = "0123456789ABCDEF".toCharArray();
+            char[] hexChars = new char[digest.length * 2];
+            for(int i = 0; i < digest.length; i++) {
+                int v = digest[i] & 0xFF;
+                hexChars[i * 2] = hexArray[v >>> 4];
+                hexChars[i * 2 + 1] = hexArray[v & 0x0F];
+            }
+            sha1 = new String(hexChars);
+        } catch (NoSuchAlgorithmException e) {
+            return null;
+        }
+        return sha1;
+    }
+
     void getDrivingTime() {
         if (currentLocation == null) {      // Should only be null if user has not granted permissions
             TextView textDrivingTime = (TextView) mainActivity.findViewById(R.id.textDrivingTime);
@@ -117,9 +158,17 @@ class LocationInfo {
 
         String url = String.format(Locale.US, URL_DIRECTIONS,
                 currentLocation.getLatitude(), currentLocation.getLongitude(),
-                mainActivity.depart.terminal.latLong, MAPS_API_KEY);
+                mainActivity.depart.terminal.latLong, ApiKeys.MAPS);
 
-        mainActivity.jsonRequest.sendRequest(url,
+        String packageName = mainActivity.getPackageName();
+        HashMap<String, String> headers = new HashMap<String,String>();
+        headers.put("X-Android-Package", mainActivity.getPackageName());
+        String sha1 = getHexSha1();
+        if (sha1 == null)
+            return;
+        headers.put("X-Android-Cert", sha1);
+
+        mainActivity.jsonRequest.sendRequest(url, headers,
                 new JsonRequestCallback() {
                     @Override
                     public void success(JSONObject response) {
@@ -134,12 +183,9 @@ class LocationInfo {
                             textDrivingTime.setText(String.format(Locale.US,
                                     "Estimated driving time:  %d minutes", duration));
                         } catch (Exception e) {
-                            mainActivity.displayToast("Failed parsing directions");
+                            mainActivity.displayToast("Failed parsing directions: " + e.toString());
                         }
                     }
-
-                    @Override
-                    public void success(JSONArray response) { }
 
                     @Override
                     public void failure(String error) {

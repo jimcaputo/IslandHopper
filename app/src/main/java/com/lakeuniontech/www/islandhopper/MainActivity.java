@@ -21,12 +21,10 @@ import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.DatePicker;
 import android.widget.ListView;
-import android.widget.ProgressBar;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
@@ -38,7 +36,6 @@ import static com.lakeuniontech.www.islandhopper.R.id.parent;
 
 
 public class MainActivity extends AppCompatActivity {
-    final String API_ACCESS_CODE = "e55e2c12-af6a-4c72-aa27-9ec1638d501f";
     final String URL_SCHEDULE = "https://www.wsdot.wa.gov/ferries/api/schedule/rest/schedule/%d-%d-%d/%d/%d?apiaccesscode=%s";
     final String URL_VESSELS = "http://www.wsdot.wa.gov/ferries/api/vessels/rest/vessellocations?apiaccesscode=%s";
 
@@ -224,9 +221,9 @@ public class MainActivity extends AppCompatActivity {
 
         String url = String.format(Locale.US, URL_SCHEDULE,
                 cal.get(Calendar.YEAR), cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH),
-                depart.terminal.id, arrive.terminal.id, API_ACCESS_CODE);
+                depart.terminal.id, arrive.terminal.id, ApiKeys.WSDOT);
 
-        jsonRequest.sendRequest(url,
+        jsonRequest.sendRequest(url, null,
                 new JsonRequestCallback() {
                     @Override
                     public void success(JSONObject response) {
@@ -235,9 +232,6 @@ public class MainActivity extends AppCompatActivity {
                         // out of order.
                         populateList(response);
                     }
-
-                    @Override
-                    public void success(JSONArray response) { }
 
                     @Override
                     public void failure(String error) {

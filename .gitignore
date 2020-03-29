@@ -86,3 +86,4 @@ lint/tmp/
 
 .DS_Store
 
+/app/src/main/java/com/lakeuniontech/www/islandhopper/ApiKeys.java
