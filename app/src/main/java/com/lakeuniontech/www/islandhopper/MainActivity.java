@@ -6,12 +6,12 @@ import android.content.Context;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -25,14 +25,12 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.util.Calendar;
-import java.util.Date;
-import java.util.Locale;
-
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import static com.lakeuniontech.www.islandhopper.R.id.parent;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -66,7 +64,7 @@ public class MainActivity extends AppCompatActivity {
         datePicker = new DatePickerFragment();
 
         depart = new TerminalSpinner();
-        depart.spinner = (Spinner) findViewById(R.id.spinnerDepart);
+        depart.spinner = findViewById(R.id.spinnerDepart);
         ArrayAdapter<Terminal> adapterDepart = new ArrayAdapter<Terminal>(
                 this, R.layout.support_simple_spinner_dropdown_item, Terminal.values());
         adapterDepart.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -74,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
         depart.spinner.setOnItemSelectedListener(depart);
 
         arrive = new TerminalSpinner();
-        arrive.spinner = (Spinner) findViewById(R.id.spinnerArrive);
+        arrive.spinner = findViewById(R.id.spinnerArrive);
         ArrayAdapter<Terminal> adapterArrive = new ArrayAdapter<Terminal>(
                 this, R.layout.support_simple_spinner_dropdown_item, Terminal.values());
         adapterArrive.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -125,7 +123,7 @@ public class MainActivity extends AppCompatActivity {
 
             // Set minDate as today, and maxDate as 90 days from now
             datePickerDialog.getDatePicker().setMinDate(System.currentTimeMillis());
-            Long maxDate = System.currentTimeMillis() + (90 * 24 * 60 * 60 * 1000L);
+            long maxDate = System.currentTimeMillis() + (90 * 24 * 60 * 60 * 1000L);
             datePickerDialog.getDatePicker().setMaxDate(maxDate);
 
             return datePickerDialog;
@@ -203,10 +201,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void updateDate() {
-        Button button = (Button) findViewById(R.id.buttonPrev);
+        Button button = findViewById(R.id.buttonPrev);
         button.setEnabled(!isToday());
 
-        TextView textDate = (TextView) findViewById(R.id.textDate);
+        TextView textDate = findViewById(R.id.textDate);
         textDate.setText(String.format(Locale.US, "%s, %d/%d/%d",
                 cal.getDisplayName(Calendar.DAY_OF_WEEK, Calendar.SHORT, Locale.US),
                 cal.get(Calendar.MONTH) + 1, cal.get(Calendar.DAY_OF_MONTH), cal.get(Calendar.YEAR) - 2000));   // Forgive the hack to get just 2 digit year  :)
@@ -215,7 +213,7 @@ public class MainActivity extends AppCompatActivity {
     private void fetchSchedule() {
         updateDate();
 
-        ListView listView = (ListView) findViewById(R.id.listview);
+        ListView listView = findViewById(R.id.listview);
         listView.setAdapter(null);
 
         // If the user set the terminals both the same, then clear the ListView, and simply return.
@@ -230,9 +228,6 @@ public class MainActivity extends AppCompatActivity {
         jsonRequest.sendRequest(url, ++requestCounter, new JsonRequestCallback() {
                 @Override
                 public void success(JSONObject response, int counter) {
-                    // TODO - make sure the response matches the current UI settings, as the user may have clicked
-                    // quickly on various changes, and now the responses are coming in over time and potentially
-                    // out of order.
                     if (counter == requestCounter)
                         populateList(response);
                 }
@@ -264,10 +259,10 @@ public class MainActivity extends AppCompatActivity {
                     String vessel = array.getJSONObject(i).getString("VesselName");
                     String strDepart = array.getJSONObject(i).getString("DepartingTime");
                     String strArrive = array.getJSONObject(i).getString("ArrivingTime");
-                    Date depart = new Date(Long.valueOf(strDepart.substring(strDepart.indexOf("(") + 1, strDepart.indexOf("-"))));
-                    Date arrive = new Date(Long.valueOf(strArrive.substring(strArrive.indexOf("(") + 1, strArrive.indexOf("-"))));
-                    Long durMinutes = (arrive.getTime() - depart.getTime()) / 1000 / 60;
-                    String duration = durMinutes.toString() + "min";
+                    Date depart = new Date(Long.parseLong(strDepart.substring(strDepart.indexOf("(") + 1, strDepart.indexOf("-"))));
+                    Date arrive = new Date(Long.parseLong(strArrive.substring(strArrive.indexOf("(") + 1, strArrive.indexOf("-"))));
+                    long durMinutes = (arrive.getTime() - depart.getTime()) / 1000 / 60;
+                    String duration = durMinutes + "min";
 
                     // If cal is today, then only show times later in the day (plus a 1 hour buffer since ferries often run late).
                     if (cal.get(Calendar.YEAR) == now.get(Calendar.YEAR) &&
@@ -308,10 +303,10 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
             View view = layoutInflater.inflate(R.layout.ferry_list_item, parent, false);
-            TextView textDepart = (TextView) view.findViewById(R.id.textDepart);
-            TextView textArrive = (TextView) view.findViewById(R.id.textArrive);
-            TextView textDuration = (TextView) view.findViewById(R.id.textDuration);
-            TextView textFerry = (TextView) view.findViewById(R.id.textFerry);
+            TextView textDepart = view.findViewById(R.id.textDepart);
+            TextView textArrive = view.findViewById(R.id.textArrive);
+            TextView textDuration = view.findViewById(R.id.textDuration);
+            TextView textFerry = view.findViewById(R.id.textFerry);
 
             textDepart.setText(ferries[position][0]);
             textArrive.setText(ferries[position][1]);
@@ -337,7 +332,7 @@ public class MainActivity extends AppCompatActivity {
         try {
             JSONArray array = response.getJSONArray("TerminalCombos").getJSONObject(0).getJSONArray("Times");
             FerryListAdapter ferryListAdapter = new FerryListAdapter(this, array);
-            ListView listView = (ListView) findViewById(R.id.listview);
+            ListView listView = findViewById(R.id.listview);
             listView.setAdapter(ferryListAdapter);
         } catch (Exception e) {
             displayToast("Failed parsing response");

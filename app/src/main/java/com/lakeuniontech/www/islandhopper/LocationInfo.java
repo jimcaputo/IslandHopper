@@ -112,7 +112,7 @@ class LocationInfo {
         return Terminal.ANACORTES;
     }
 
-    String getHexSha1() {
+    private String getHexSha1() {
         PackageInfo packageInfo = null;
         try {
             //String sha1 = String.format(Locale.US, "%s", ApiKeys.SHA1);
@@ -168,7 +168,6 @@ class LocationInfo {
                 currentLocation.getLatitude(), currentLocation.getLongitude(),
                 mainActivity.depart.terminal.latLong, ApiKeys.MAPS);
 
-        String packageName = mainActivity.getPackageName();
         HashMap<String, String> headers = new HashMap<String,String>();
         headers.put("X-Android-Package", mainActivity.getPackageName());
         String sha1 = getHexSha1();
@@ -180,7 +179,7 @@ class LocationInfo {
             @Override
             public void success(JSONObject response) {
                 try {
-                    TextView textDrivingTime = (TextView) mainActivity.findViewById(R.id.textDrivingTime);
+                    TextView textDrivingTime = mainActivity.findViewById(R.id.textDrivingTime);
 
                     JSONArray routes = response.getJSONArray("routes");
                     JSONArray legs = routes.getJSONObject(0).getJSONArray("legs");
@@ -192,7 +191,7 @@ class LocationInfo {
                     int hours = minutes / 60;
                     minutes = minutes % 60;
 
-                    String duration = new String();
+                    String duration = "";
                     if (days > 0)  duration += String.format(Locale.US, "%d d ", days);
                     if (hours > 0)  duration += String.format(Locale.US, "%d h ", hours);
                     if (minutes > 0)  duration += String.format(Locale.US, "%d m", minutes);
