@@ -176,9 +176,9 @@ class LocationInfo {
             return;
         headers.put("X-Android-Cert", sha1);
 
-        mainActivity.jsonRequest.sendRequest(url, headers, 0, new JsonRequestCallback() {
+        mainActivity.jsonRequest.sendRequest(url, headers, new JsonRequestCallback() {
             @Override
-            public void success(JSONObject response, int counter) {
+            public void success(JSONObject response) {
                 try {
                     TextView textDrivingTime = (TextView) mainActivity.findViewById(R.id.textDrivingTime);
 
