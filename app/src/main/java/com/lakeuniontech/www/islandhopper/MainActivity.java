@@ -52,6 +52,8 @@ public class MainActivity extends AppCompatActivity {
     TerminalSpinner depart;
     TerminalSpinner arrive;
 
+    FerryListAdapter ferryListAdapter;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -83,6 +85,8 @@ public class MainActivity extends AppCompatActivity {
         if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, new String[]{android.Manifest.permission.ACCESS_FINE_LOCATION}, 1);
         }
+
+        ferryListAdapter = null;
     }
 
     @Override
@@ -228,8 +232,12 @@ public class MainActivity extends AppCompatActivity {
         jsonRequest.sendRequest(url, ++requestCounter, new JsonRequestCallback() {
                 @Override
                 public void success(JSONObject response, int counter) {
-                    if (counter == requestCounter)
+                    if (counter == requestCounter) {
                         populateList(response);
+                        if (ferryListAdapter != null  &&  ferryListAdapter.fToday) {
+                            fetchVessels();
+                        }
+                    }
                 }
 
                 @Override
@@ -240,21 +248,18 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private class FerryListAdapter extends BaseAdapter {
-        int sailings;       // Count of ferries.  Can be less than JSONArray size, given that we filter sailings after the current time for current day
         String[][] ferries;
+        int totalRows;  // Rows in the listview including the header, and possibly real-time info
+        boolean fToday; // If today, then we'll attempt to show real-time ferry info
         LayoutInflater layoutInflater;
 
         FerryListAdapter(MainActivity mainActivity, JSONArray array) {
-            ferries = new String[array.length() + 1][4];
-            sailings = 1;
-
-            ferries[0][0] = "Depart";
-            ferries[0][1] = "Arrive";
-            ferries[0][2] = "Duration";
-            ferries[0][3] = "Ferry";
+            ferries = new String[array.length()][4];
+            fToday = false;
 
             try {
                 Calendar now = Calendar.getInstance();
+                int ferryCount = 0;
                 for (int i = 0; i < array.length(); i++) {
                     String vessel = array.getJSONObject(i).getString("VesselName");
                     String strDepart = array.getJSONObject(i).getString("DepartingTime");
@@ -267,16 +272,22 @@ public class MainActivity extends AppCompatActivity {
                     // If cal is today, then only show times later in the day (plus a 1 hour buffer since ferries often run late).
                     if (cal.get(Calendar.YEAR) == now.get(Calendar.YEAR) &&
                             cal.get(Calendar.DAY_OF_YEAR) == now.get(Calendar.DAY_OF_YEAR)) {
+                        fToday = true;
                         if (depart.getTime() < now.getTimeInMillis() - 1 * 60 * 60 * 1000) {    // 1 hour buffer
                             continue;
                         }
                     }
 
-                    ferries[sailings][0] = formatTime(depart);
-                    ferries[sailings][1] = formatTime(arrive);
-                    ferries[sailings][2] = duration;
-                    ferries[sailings][3] = vessel;
-                    sailings++;
+                    ferries[ferryCount][0] = formatTime(depart);
+                    ferries[ferryCount][1] = formatTime(arrive);
+                    ferries[ferryCount][2] = duration;
+                    ferries[ferryCount][3] = vessel;
+                    ferryCount++;
+                }
+                totalRows = ferryCount + 1;     // ferryCount + 1 row for the header
+                // Add a row for the inline real-time info, but only if at least one ferry is in the list
+                if (fToday  &&  ferryCount > 0) {
+                    totalRows++;
                 }
             } catch (Exception e) {
                 mainActivity.displayToast("Failed parsing response");
@@ -286,13 +297,18 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
+        public int getViewTypeCount() {
+            return 2;
+        }
+
+        @Override
         public int getCount() {
-            return sailings;
+            return totalRows;
         }
 
         @Override
         public Object getItem(int position) {
-            return ferries[position];
+            return null;
         }
 
         @Override
@@ -302,18 +318,38 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public View getView(int position, View convertView, ViewGroup parent) {
-            View view = layoutInflater.inflate(R.layout.ferry_list_item, parent, false);
-            TextView textDepart = view.findViewById(R.id.textDepart);
-            TextView textArrive = view.findViewById(R.id.textArrive);
-            TextView textDuration = view.findViewById(R.id.textDuration);
-            TextView textFerry = view.findViewById(R.id.textFerry);
-
-            textDepart.setText(ferries[position][0]);
-            textArrive.setText(ferries[position][1]);
-            textDuration.setText(ferries[position][2]);
-            textFerry.setText(ferries[position][3]);
+            // "position" is passed in by the ListView and we need to determine what to display at that position
+            // "ferries" is a zero based array, with no knowledge of ListView positions
+            // "fToday" signals if we should show real-time info
+            //
+            // Today would look like:
+            //   pos 0, Header Row
+            //   pos 1, first ferry, ferries[0]
+            //   pos 2, real-time info for that ferry
+            //   pos 3, second ferry, ferries[1]
+            //   pos 4, third ferry, ferries[2]
+            //   ...
+            //
+            // Any other day would look like:
+            //   pos 0, Header Row
+            //   pos 1, first ferry, ferries[0]
+            //   pos 2, second ferry, ferries[1]
+            //   ...
 
             if (position == 0) {
+                View view = layoutInflater.inflate(R.layout.ferry_list_item, parent, false);
+                view.setClickable(false);
+
+                View divider = view.findViewById(R.id.viewDivider);
+                divider.setVisibility(View.INVISIBLE);
+                TextView textDepart = view.findViewById(R.id.textDepart);
+                TextView textArrive = view.findViewById(R.id.textArrive);
+                TextView textDuration = view.findViewById(R.id.textDuration);
+                TextView textFerry = view.findViewById(R.id.textFerry);
+                textDepart.setText("Depart");
+                textArrive.setText("Arrive");
+                textDuration.setText("Duration");
+                textFerry.setText("Ferry");
                 textDepart.setTypeface(null, Typeface.BOLD);
                 textDepart.setTextColor(Color.parseColor("#FF000000"));     // Black
                 textArrive.setTypeface(null, Typeface.BOLD);
@@ -322,8 +358,33 @@ public class MainActivity extends AppCompatActivity {
                 textDuration.setTextColor(Color.parseColor("#FF000000"));     // Black
                 textFerry.setTypeface(null, Typeface.BOLD);
                 textFerry.setTextColor(Color.parseColor("#FF000000"));     // Black
+                return view;
             }
 
+            int ferryIndex = 0;
+            if (fToday) {
+                if (position == 1) {
+                    ferryIndex = 0;
+                } else if (position > 2) {
+                    ferryIndex = position - 2;
+                } else if (position == 2) {
+                    View view = layoutInflater.inflate(R.layout.ferry_list_item_realtime, parent, false);
+                    return view;
+                }
+            }
+            else {
+                ferryIndex = position - 1;
+            }
+
+            View view = layoutInflater.inflate(R.layout.ferry_list_item, parent, false);
+            TextView textDepart = view.findViewById(R.id.textDepart);
+            TextView textArrive = view.findViewById(R.id.textArrive);
+            TextView textDuration = view.findViewById(R.id.textDuration);
+            TextView textFerry = view.findViewById(R.id.textFerry);
+            textDepart.setText(ferries[ferryIndex][0]);
+            textArrive.setText(ferries[ferryIndex][1]);
+            textDuration.setText(ferries[ferryIndex][2]);
+            textFerry.setText(ferries[ferryIndex][3]);
             return view;
         }
     }
@@ -331,13 +392,81 @@ public class MainActivity extends AppCompatActivity {
     public void populateList(JSONObject response) {
         try {
             JSONArray array = response.getJSONArray("TerminalCombos").getJSONObject(0).getJSONArray("Times");
-            FerryListAdapter ferryListAdapter = new FerryListAdapter(this, array);
+            ferryListAdapter = new FerryListAdapter(this, array);
             ListView listView = findViewById(R.id.listview);
             listView.setAdapter(ferryListAdapter);
         } catch (Exception e) {
             displayToast("Failed parsing response");
         }
     }
+
+    private void fetchVessels() {
+        String url = String.format(Locale.US, URL_VESSELS, ApiKeys.WSDOT);
+
+        jsonRequest.sendArrayRequest(url, new JsonRequestCallback() {
+            @Override
+            public void success(JSONArray response) {
+                populateRealtimeInfo(response);
+            }
+
+            @Override
+            public void failure(String error) {
+                displayToast("Request failed: " + error);
+            }
+        });
+    }
+
+    private void populateRealtimeInfo(JSONArray jsonVessels) {
+        String vesselId;
+        if (ferryListAdapter.fToday  &&  ferryListAdapter.totalRows < 2) {
+            // It's Today, but no ferries displayed, so no real-time info to show
+            return;
+        }
+        if (ferryListAdapter.ferries.length == 0) {
+            // Although unlikely, it might be possible to get here without any ferries in the array, probably
+            // a result of very fast movement through the UI.
+            return;
+        }
+        try {
+            for (int i = 0; i < jsonVessels.length(); i++) {
+                JSONObject vessel = jsonVessels.getJSONObject(i);
+                if (vessel.getString("VesselName").equals(ferryListAdapter.ferries[0][3])) {
+                    TextView textRealtimeHeader = findViewById(R.id.textRealtimeHeader);
+                    TextView textRealtimeDepartTerminal = findViewById(R.id.textRealtimeDepartTerminal);
+                    TextView textRealtimeArriveTerminal = findViewById(R.id.textRealtimeArriveTerminal);
+                    TextView textScheduledDepartureTime = findViewById(R.id.textScheduledDepartureTime);
+                    TextView textActualDepartureTime = findViewById(R.id.textActualDepartureTime);
+                    TextView textEstimatedArrivalTime = findViewById(R.id.textEstimatedArrivalTime);
+
+                    textRealtimeHeader.setText(vessel.getString("VesselName") + ": Real-time Data");
+                    textRealtimeDepartTerminal.setText(vessel.getString("DepartingTerminalName"));
+
+                    String time = vessel.getString("ScheduledDeparture");
+                    textScheduledDepartureTime.setText(formatTime(new Date(
+                            Long.parseLong(time.substring(time.indexOf("(") + 1, time.indexOf("-"))))));
+
+                    if (vessel.getBoolean("AtDock")) {
+                        textRealtimeArriveTerminal.setText("...");
+                        textActualDepartureTime.setText("At Dock");
+                        textEstimatedArrivalTime.setText("...");
+                    } else {
+                        textRealtimeArriveTerminal.setText(vessel.getString("ArrivingTerminalName"));
+                        time = vessel.getString("LeftDock");
+                        textActualDepartureTime.setText(formatTime(new Date(
+                                Long.parseLong(time.substring(time.indexOf("(") + 1, time.indexOf("-"))))));
+                        time = vessel.getString("Eta");
+                        textEstimatedArrivalTime.setText(formatTime(new Date(
+                                Long.parseLong(time.substring(time.indexOf("(") + 1, time.indexOf("-"))))));
+                    }
+                    break;
+                }
+            }
+        } catch (Exception e) {
+            MainActivity.this.displayToast("Real-time info: Failed parsing response" + e);
+        }
+    }
+
+
 
     private String formatTime(Date time) {
         Calendar cal = Calendar.getInstance();
