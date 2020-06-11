@@ -49,10 +49,7 @@ class LocationInfo {
             return;
 
         try {
-            // TODO - look at what happens here on startup.  We need to get a quick fix for application
-            // startup so that we can set the terminals.  But it's okay to delay on figuring out driving time.
             currentLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
-
             locationListener = new LocationListener() {
                 public void onLocationChanged(Location location) {
                     currentLocation = location;
@@ -115,7 +112,7 @@ class LocationInfo {
     private String getHexSha1() {
         PackageInfo packageInfo = null;
         try {
-            //String sha1 = String.format(Locale.US, "%s", ApiKeys.SHA1);
+            mainActivity.displayToast(mainActivity.getPackageName() + " " + mainActivity.getPackageManager().GET_SIGNING_CERTIFICATES);
             packageInfo = mainActivity.getPackageManager().getPackageInfo(
                     mainActivity.getPackageName(), mainActivity.getPackageManager().GET_SIGNING_CERTIFICATES);
             if (packageInfo == null
@@ -142,6 +139,7 @@ class LocationInfo {
                 hexChars[i * 2 + 1] = hexArray[v & 0x0F];
             }
             sha1 = new String(hexChars);
+            mainActivity.displayToast(sha1);
         } catch (NoSuchAlgorithmException e) {
             return null;
         }
@@ -168,20 +166,25 @@ class LocationInfo {
                 currentLocation.getLatitude(), currentLocation.getLongitude(),
                 mainActivity.depart.terminal.latLong, ApiKeys.MAPS);
 
+
         HashMap<String, String> headers = new HashMap<String,String>();
         headers.put("X-Android-Package", mainActivity.getPackageName());
         String sha1 = getHexSha1();
+        /*
         if (sha1 == null)
             return;
         headers.put("X-Android-Cert", sha1);
+        */
 
-        mainActivity.jsonRequest.sendRequest(url, headers, new JsonRequestCallback() {
+        mainActivity.jsonRequest.sendRequest(url, new JsonRequestCallback() {
             @Override
             public void success(JSONObject response) {
                 try {
-                    TextView textDrivingTime = mainActivity.findViewById(R.id.textDrivingTime);
-
                     JSONArray routes = response.getJSONArray("routes");
+                    if (routes.length() == 0) {
+                        mainActivity.displayToast("Unexpected Driving Time response: " + response);
+                        return;
+                    }
                     JSONArray legs = routes.getJSONObject(0).getJSONArray("legs");
                     int minutes = legs.getJSONObject(0).getJSONObject("duration").getInt("value");
 
@@ -196,10 +199,11 @@ class LocationInfo {
                     if (hours > 0)  duration += String.format(Locale.US, "%d h ", hours);
                     if (minutes > 0)  duration += String.format(Locale.US, "%d m", minutes);
 
+                    TextView textDrivingTime = mainActivity.findViewById(R.id.textDrivingTime);
                     textDrivingTime.setText(String.format(Locale.US,
                             "Estimated driving time:  %s", duration));
                 } catch (Exception e) {
-                    mainActivity.displayToast("Failed parsing directions: " + e.toString());
+                    mainActivity.displayToast("Failed parsing directions: " + e.toString() + "  "  + response);
                 }
             }
 

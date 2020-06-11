@@ -6,8 +6,8 @@ android {
         applicationId "com.lakeuniontech.www.islandhopper"
         minSdkVersion 28
         targetSdkVersion 28
-        versionCode 11
-        versionName "1.1"
+        versionCode 14
+        versionName '1.4'
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {

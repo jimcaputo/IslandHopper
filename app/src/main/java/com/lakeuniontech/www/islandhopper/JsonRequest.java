@@ -30,6 +30,10 @@ class JsonRequest {
         queue = Volley.newRequestQueue(context);
     }
 
+    void sendRequest(String url, final JsonRequestCallback callback) {
+        sendRequest(url, null, 0, callback);
+    }
+
     void sendRequest(String url, final HashMap<String, String> headers, final JsonRequestCallback callback) {
         sendRequest(url, headers, 0, callback);
     }
