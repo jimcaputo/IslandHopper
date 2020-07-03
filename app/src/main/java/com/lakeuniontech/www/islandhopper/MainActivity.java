@@ -54,6 +54,8 @@ public class MainActivity extends AppCompatActivity {
 
     FerryListAdapter ferryListAdapter;
 
+    long timeAppPaused;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -94,14 +96,20 @@ public class MainActivity extends AppCompatActivity {
         super.onResume();
         locationInfo.startListener();
 
-        Terminal departTerminal = locationInfo.getDepartTerminal();
-        setTerminals(departTerminal, departTerminal.getArriveTerminal());
+        // If it's been 10 minutes since they exited the app, then reset locations and date.
+        if (cal.getTimeInMillis() - timeAppPaused > 10 * 60 * 1000) {
+            Terminal departTerminal = locationInfo.getDepartTerminal();
+            setTerminals(departTerminal, departTerminal.getArriveTerminal());
+            cal = Calendar.getInstance();
+            fetchSchedule();
+        }
     }
 
     @Override
     protected void onPause() {
         super.onPause();
         locationInfo.stopListener();
+        timeAppPaused = cal.getTimeInMillis();
     }
 
     @Override
@@ -442,21 +450,32 @@ public class MainActivity extends AppCompatActivity {
                     textRealtimeDepartTerminal.setText(vessel.getString("DepartingTerminalName"));
 
                     String time = vessel.getString("ScheduledDeparture");
-                    textScheduledDepartureTime.setText(formatTime(new Date(
-                            Long.parseLong(time.substring(time.indexOf("(") + 1, time.indexOf("-"))))));
-
+                    if (time.contains("-")) {
+                        textScheduledDepartureTime.setText(formatTime(new Date(
+                                Long.parseLong(time.substring(time.indexOf("(") + 1, time.indexOf("-"))))));
+                    } else {
+                        textScheduledDepartureTime.setText("---");
+                    }
                     if (vessel.getBoolean("AtDock")) {
-                        textRealtimeArriveTerminal.setText("...");
+                        textRealtimeArriveTerminal.setText("---");
                         textActualDepartureTime.setText("At Dock");
-                        textEstimatedArrivalTime.setText("...");
+                        textEstimatedArrivalTime.setText("---");
                     } else {
                         textRealtimeArriveTerminal.setText(vessel.getString("ArrivingTerminalName"));
                         time = vessel.getString("LeftDock");
-                        textActualDepartureTime.setText(formatTime(new Date(
-                                Long.parseLong(time.substring(time.indexOf("(") + 1, time.indexOf("-"))))));
+                        if (time.contains("-")) {
+                            textActualDepartureTime.setText(formatTime(new Date(
+                                    Long.parseLong(time.substring(time.indexOf("(") + 1, time.indexOf("-"))))));
+                        } else {
+                            textActualDepartureTime.setText("---");
+                        }
                         time = vessel.getString("Eta");
-                        textEstimatedArrivalTime.setText(formatTime(new Date(
-                                Long.parseLong(time.substring(time.indexOf("(") + 1, time.indexOf("-"))))));
+                        if (time.contains("-")) {
+                            textEstimatedArrivalTime.setText(formatTime(new Date(
+                                    Long.parseLong(time.substring(time.indexOf("(") + 1, time.indexOf("-"))))));
+                        } else {
+                            textEstimatedArrivalTime.setText("---");
+                        }
                     }
                     break;
                 }

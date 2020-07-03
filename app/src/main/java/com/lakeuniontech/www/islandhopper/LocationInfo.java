@@ -166,11 +166,10 @@ class LocationInfo {
                 currentLocation.getLatitude(), currentLocation.getLongitude(),
                 mainActivity.depart.terminal.latLong, ApiKeys.MAPS);
 
-
+        /*
         HashMap<String, String> headers = new HashMap<String,String>();
         headers.put("X-Android-Package", mainActivity.getPackageName());
         String sha1 = getHexSha1();
-        /*
         if (sha1 == null)
             return;
         headers.put("X-Android-Cert", sha1);
