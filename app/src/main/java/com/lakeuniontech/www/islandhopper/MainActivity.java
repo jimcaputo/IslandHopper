@@ -450,7 +450,7 @@ public class MainActivity extends AppCompatActivity {
                     textRealtimeDepartTerminal.setText(vessel.getString("DepartingTerminalName"));
 
                     String time = vessel.getString("ScheduledDeparture");
-                    if (time.contains("-")) {
+                    if (time != null  &&  time.contains("-")) {
                         textScheduledDepartureTime.setText(formatTime(new Date(
                                 Long.parseLong(time.substring(time.indexOf("(") + 1, time.indexOf("-"))))));
                     } else {
@@ -461,16 +461,21 @@ public class MainActivity extends AppCompatActivity {
                         textActualDepartureTime.setText("At Dock");
                         textEstimatedArrivalTime.setText("---");
                     } else {
-                        textRealtimeArriveTerminal.setText(vessel.getString("ArrivingTerminalName"));
+                        String arriving = vessel.getString("ArrivingTerminalName");
+                        if (arriving != null  &&  arriving != "null") {
+                            textRealtimeArriveTerminal.setText(arriving);
+                        } else {
+                            textRealtimeArriveTerminal.setText("---");
+                        }
                         time = vessel.getString("LeftDock");
-                        if (time.contains("-")) {
+                        if (time != null  &&  time.contains("-")) {
                             textActualDepartureTime.setText(formatTime(new Date(
                                     Long.parseLong(time.substring(time.indexOf("(") + 1, time.indexOf("-"))))));
                         } else {
                             textActualDepartureTime.setText("---");
                         }
                         time = vessel.getString("Eta");
-                        if (time.contains("-")) {
+                        if (time != null  &&  time.contains("-")) {
                             textEstimatedArrivalTime.setText(formatTime(new Date(
                                     Long.parseLong(time.substring(time.indexOf("(") + 1, time.indexOf("-"))))));
                         } else {
